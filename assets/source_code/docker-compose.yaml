@@ -1,0 +1,65 @@
+version: '3'
+services:
+  
+  #PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: demenskan/laravelapp:8.1-fpm
+    container_name: snas-laravel-app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: snas-laravel
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - snas-laravel-net
+
+  #Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: snas-webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8080:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www
+      - ./nginx/conf.d:/etc/nginx/conf.d/
+    networks:
+      - snas-laravel-net
+
+  #MySQL Service
+  db:
+    image: mysql:5.7.22
+    container_name: db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: snas-laravel
+      MYSQL_ROOT_PASSWORD: supersecret09292929
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - snas-laravel-net
+
+#Docker Networks
+networks:
+  snas-laravel-net:
+    driver: bridge
+
+#Volumes
+volumes:
+  dbdata:
+    driver: local
